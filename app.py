@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 import sys
 import os
+from datetime import datetime
+import json
+from collections import Counter
 
 # Agregar el directorio actual al path para importar Diagnostico
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -42,9 +45,32 @@ def predict():
         
         # Calcular suma para información adicional
         suma = valor1 + valor2 + valor3
+
+        # Registrar predicción en archivo
+        registro = {
+            "prediccion": resultado,
+            "valor1": valor1,
+            "valor2": valor2,
+            "valor3": valor3,
+            "suma": suma,
+            "fecha": datetime.now().isoformat()
+        }
+        try:
+            with open("registro_predicciones.txt", "a", encoding="utf-8") as f:
+                f.write(json.dumps(registro, ensure_ascii=False) + "\n")
+        except Exception:
+            # Si falla el registro, continuamos respondiendo la predicción
+            pass
         
         return jsonify({
             'diagnostico': resultado,
+            'categorias': [
+                "NO ENFERMO",
+                "ENFERMO LEVE",
+                "ENFERMO AGUDO",
+                "ENFERMO CRONICO",
+                "ENFERMEDAD TERMINAL"
+            ],
             'valor1': valor1,
             'valor2': valor2,
             'valor3': valor3,
@@ -81,9 +107,31 @@ def predict_get():
         
         # Calcular suma para información adicional
         suma = valor1 + valor2 + valor3
+
+        # Registrar predicción en archivo
+        registro = {
+            "prediccion": resultado,
+            "valor1": valor1,
+            "valor2": valor2,
+            "valor3": valor3,
+            "suma": suma,
+            "fecha": datetime.now().isoformat()
+        }
+        try:
+            with open("registro_predicciones.txt", "a", encoding="utf-8") as f:
+                f.write(json.dumps(registro, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
         
         return jsonify({
             'diagnostico': resultado,
+            'categorias': [
+                "NO ENFERMO",
+                "ENFERMO LEVE",
+                "ENFERMO AGUDO",
+                "ENFERMO CRONICO",
+                "ENFERMEDAD TERMINAL"
+            ],
             'valor1': valor1,
             'valor2': valor2,
             'valor3': valor3,
@@ -102,6 +150,39 @@ def health():
     return jsonify({
         'status': 'healthy',
         'message': 'La aplicación de diagnóstico médico está funcionando correctamente'
+    })
+
+# Utilidad interna para obtener el reporte
+def obtener_reporte():
+    registros = []
+    try:
+        with open("registro_predicciones.txt", "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    registros.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    except FileNotFoundError:
+        registros = []
+
+    conteo = Counter([r.get("prediccion") for r in registros])
+    ultimas = registros[-5:]
+    ultima_fecha = registros[-1]["fecha"] if registros else None
+    return conteo, ultimas, ultima_fecha
+
+
+@app.route('/api/report', methods=['GET'])
+def report():
+    """Devuelve estadísticas de las predicciones realizadas"""
+    conteo, ultimas, ultima_fecha = obtener_reporte()
+
+    return jsonify({
+        'total_por_categoria': dict(conteo),
+        'ultimas_5': ultimas,
+        'fecha_ultima_prediccion': ultima_fecha
     })
 
 if __name__ == '__main__':

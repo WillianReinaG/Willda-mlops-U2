@@ -8,5 +8,7 @@ def diagnostico(valor1, valor2, valor3):
         return "ENFERMO LEVE"
     elif 20 <= suma < 30:
         return "ENFERMO AGUDO"
-    else:
+    elif 30 <= suma < 40:
         return "ENFERMO CRONICO"
+    else:
+        return "ENFERMEDAD TERMINAL"
