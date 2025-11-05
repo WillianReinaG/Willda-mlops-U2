@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Diagnóstico Médico</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1.1em;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #e1e5e9;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result h3 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .result p {
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .api-info {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .api-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .api-info p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .api-info code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Sistema de Diagnóstico Médico</h1>
+        <p class="subtitle">Ingrese los valores para obtener un diagnóstico médico</p>
+        
+        <form id="diagnosisForm">
+            <div class="form-group">
+                <label for="valor1">Valor 1:</label>
+                <input type="number" id="valor1" name="valor1" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="valor2">Valor 2:</label>
+                <input type="number" id="valor2" name="valor2" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="valor3">Valor 3:</label>
+                <input type="number" id="valor3" name="valor3" step="0.1" required>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" class="btn-primary">🔍 Obtener Diagnóstico</button>
+                <button type="button" class="btn-secondary" onclick="clearForm()">🗑️ Limpiar</button>
+            </div>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Procesando diagnóstico...</p>
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div class="api-info">
+            <h3>📡 Información de la API</h3>
+            <p><strong>Endpoint POST:</strong> <code>/api/predict</code></p>
+            <p><strong>Endpoint GET:</strong> <code>/api/predict?valor1=X&valor2=Y&valor3=Z</code></p>
+            <p><strong>Endpoint de salud:</strong> <code>/health</code></p>
+            <p><strong>Formato de respuesta:</strong> JSON con diagnóstico y valores calculados</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('diagnosisForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const valor1 = parseFloat(document.getElementById('valor1').value);
+            const valor2 = parseFloat(document.getElementById('valor2').value);
+            const valor3 = parseFloat(document.getElementById('valor3').value);
+            
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        valor1: valor1,
+                        valor2: valor2,
+                        valor3: valor3
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Ocultar loading
+                document.getElementById('loading').style.display = 'none';
+                
+                if (response.ok) {
+                    showResult(data, 'success');
+                } else {
+                    showResult(data, 'error');
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                showResult({error: 'Error de conexión: ' + error.message}, 'error');
+            }
+        });
+        
+        function showResult(data, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            
+            if (type === 'success') {
+                resultDiv.innerHTML = `
+                    <h3>📋 Resultado del Diagnóstico</h3>
+                    <p><strong>Diagnóstico:</strong> ${data.diagnostico}</p>
+                    <p><strong>Valor 1:</strong> ${data.valor1}</p>
+                    <p><strong>Valor 2:</strong> ${data.valor2}</p>
+                    <p><strong>Valor 3:</strong> ${data.valor3}</p>
+                    <p><strong>Suma total:</strong> ${data.suma}</p>
+                    <p><strong>Mensaje:</strong> ${data.mensaje}</p>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${data.error}</p>
+                `;
+            }
+            
+            resultDiv.style.display = 'block';
+        }
+        
+        function clearForm() {
+            document.getElementById('diagnosisForm').reset();
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+
+
