@@ -45,6 +45,13 @@ def predict():
         
         return jsonify({
             'diagnostico': resultado,
+            'categorias': [
+                "NO ENFERMO",
+                "ENFERMO LEVE",
+                "ENFERMO AGUDO",
+                "ENFERMO CRONICO",
+                "ENFERMEDAD TERMINAL"
+            ],
             'valor1': valor1,
             'valor2': valor2,
             'valor3': valor3,
@@ -84,6 +91,13 @@ def predict_get():
         
         return jsonify({
             'diagnostico': resultado,
+            'categorias': [
+                "NO ENFERMO",
+                "ENFERMO LEVE",
+                "ENFERMO AGUDO",
+                "ENFERMO CRONICO",
+                "ENFERMEDAD TERMINAL"
+            ],
             'valor1': valor1,
             'valor2': valor2,
             'valor3': valor3,
