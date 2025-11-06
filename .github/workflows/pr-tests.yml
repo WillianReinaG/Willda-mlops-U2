@@ -1,0 +1,56 @@
+name: CI/CD Pipeline - PR Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Comentar en PR - CI/CD en acción
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🔧 **CI/CD en acción. Ejecutando tareas …**'
+          })
+      
+    - name: Construir imagen Docker
+      run: |
+        docker build -t diagnostico-app-test:latest .
+      
+    - name: Ejecutar pruebas unitarias dentro del contenedor
+      id: test
+      run: |
+        docker run --rm diagnostico-app-test:latest pytest tests/ -v --tb=short || echo "TESTS_FAILED=true" >> $GITHUB_ENV
+      continue-on-error: true
+      
+    - name: Comentar resultado final en PR
+      uses: actions/github-script@v7
+      if: always() && github.event_name == 'pull_request'
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const testResult = process.env.TESTS_FAILED === 'true'
+            ? '❌ **CI/CD terminado con errores.**\n\nAlgunas pruebas fallaron. Revisa los logs en la pestaña "Checks".'
+            : '✅ **CI/CD terminado con éxito.**\n\nTodas las pruebas pasaron correctamente. El PR está listo para la revisión final.';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: testResult
+          });
+
