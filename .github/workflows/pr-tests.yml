@@ -14,16 +14,6 @@ jobs:
     - name: Checkout código
       uses: actions/checkout@v4
       
-    - name: Configurar Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-        
-    - name: Instalar dependencias
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        
     - name: Comentar en PR - CI/CD en acción
       uses: actions/github-script@v7
       if: github.event_name == 'pull_request'
@@ -36,27 +26,31 @@ jobs:
             repo: context.repo.repo,
             body: '🔧 **CI/CD en acción. Ejecutando tareas …**'
           })
-          
-    - name: Ejecutar pruebas unitarias
+      
+    - name: Construir imagen Docker
+      run: |
+        docker build -t diagnostico-app-test:latest .
+      
+    - name: Ejecutar pruebas unitarias dentro del contenedor
       id: test
       run: |
-        pytest tests/ -v --tb=short || echo "TESTS_FAILED=true" >> $GITHUB_ENV
+        docker run --rm diagnostico-app-test:latest pytest tests/ -v --tb=short || echo "TESTS_FAILED=true" >> $GITHUB_ENV
       continue-on-error: true
       
-    - name: Comentar resultado de pruebas en PR
+    - name: Comentar resultado final en PR
       uses: actions/github-script@v7
       if: always() && github.event_name == 'pull_request'
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const testResult = process.env.TESTS_FAILED === 'true'
-            ? '❌ Algunas pruebas fallaron. Revisa los logs.'
-            : '✅ Pruebas ejecutadas exitosamente';
+            ? '❌ **CI/CD terminado con errores.**\n\nAlgunas pruebas fallaron. Revisa los logs en la pestaña "Checks".'
+            : '✅ **CI/CD terminado con éxito.**\n\nTodas las pruebas pasaron correctamente. El PR está listo para la revisión final.';
           
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: `🧪 **Resultado de pruebas:**\n\n${testResult}\n\nRevisa los detalles en la pestaña "Checks" de este PR.`
+            body: testResult
           });
 
