@@ -20,36 +20,37 @@ def predict():
         # Obtener datos del request
         data = request.get_json()
         
-        # Validar que se proporcionen los tres valores
-        if not data or 'valor1' not in data or 'valor2' not in data or 'valor3' not in data:
+        # Validar que se proporcionen los cinco valores
+        required_fields = ['edad', 'temperatura', 'frecuencia_cardiaca', 'glucosa', 'presion_arterial']
+        if not data or not all(field in data for field in required_fields):
             return jsonify({
-                'error': 'Se requieren los valores valor1, valor2 y valor3'
+                'error': f'Se requieren los valores: {", ".join(required_fields)}'
             }), 400
         
         # Extraer valores
-        valor1 = float(data['valor1'])
-        valor2 = float(data['valor2'])
-        valor3 = float(data['valor3'])
+        edad = float(data['edad'])
+        temperatura = float(data['temperatura'])
+        frecuencia_cardiaca = float(data['frecuencia_cardiaca'])
+        glucosa = float(data['glucosa'])
+        presion_arterial = float(data['presion_arterial'])
         
         # Validar que los valores sean números válidos
-        if not all(isinstance(val, (int, float)) for val in [valor1, valor2, valor3]):
+        if not all(isinstance(val, (int, float)) for val in [edad, temperatura, frecuencia_cardiaca, glucosa, presion_arterial]):
             return jsonify({
                 'error': 'Todos los valores deben ser números'
             }), 400
         
         # Realizar diagnóstico
-        resultado = diagnostico(valor1, valor2, valor3)
-        
-        # Calcular suma para información adicional
-        suma = valor1 + valor2 + valor3
+        resultado = diagnostico(edad, temperatura, frecuencia_cardiaca, glucosa, presion_arterial)
         
         return jsonify({
             'diagnostico': resultado,
-            'valor1': valor1,
-            'valor2': valor2,
-            'valor3': valor3,
-            'suma': suma,
-            'mensaje': f'Diagnóstico basado en la suma de valores: {suma}'
+            'edad': edad,
+            'temperatura': temperatura,
+            'frecuencia_cardiaca': frecuencia_cardiaca,
+            'glucosa': glucosa,
+            'presion_arterial': presion_arterial,
+            'mensaje': 'Diagnóstico realizado con éxito'
         })
         
     except ValueError as e:
@@ -66,29 +67,29 @@ def predict_get():
     """Endpoint GET para diagnóstico con parámetros de query"""
     try:
         # Obtener parámetros de la URL
-        valor1 = request.args.get('valor1', type=float)
-        valor2 = request.args.get('valor2', type=float)
-        valor3 = request.args.get('valor3', type=float)
+        edad = request.args.get('edad', type=float)
+        temperatura = request.args.get('temperatura', type=float)
+        frecuencia_cardiaca = request.args.get('frecuencia_cardiaca', type=float)
+        glucosa = request.args.get('glucosa', type=float)
+        presion_arterial = request.args.get('presion_arterial', type=float)
         
-        # Validar que se proporcionen los tres valores
-        if valor1 is None or valor2 is None or valor3 is None:
+        # Validar que se proporcionen los cinco valores
+        if None in [edad, temperatura, frecuencia_cardiaca, glucosa, presion_arterial]:
             return jsonify({
-                'error': 'Se requieren los parámetros valor1, valor2 y valor3 en la URL'
+                'error': 'Se requieren los parámetros: edad, temperatura, frecuencia_cardiaca, glucosa, presion_arterial en la URL'
             }), 400
         
         # Realizar diagnóstico
-        resultado = diagnostico(valor1, valor2, valor3)
-        
-        # Calcular suma para información adicional
-        suma = valor1 + valor2 + valor3
+        resultado = diagnostico(edad, temperatura, frecuencia_cardiaca, glucosa, presion_arterial)
         
         return jsonify({
             'diagnostico': resultado,
-            'valor1': valor1,
-            'valor2': valor2,
-            'valor3': valor3,
-            'suma': suma,
-            'mensaje': f'Diagnóstico basado en la suma de valores: {suma}'
+            'edad': edad,
+            'temperatura': temperatura,
+            'frecuencia_cardiaca': frecuencia_cardiaca,
+            'glucosa': glucosa,
+            'presion_arterial': presion_arterial,
+            'mensaje': 'Diagnóstico realizado con éxito'
         })
         
     except Exception as e:
