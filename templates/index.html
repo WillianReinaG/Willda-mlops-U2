@@ -187,28 +187,44 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏥 Sistema de Diagnóstico Médico</h1>
-        <p class="subtitle">Ingrese los valores para obtener un diagnóstico médico</p>
+        <h1>🏥 Sistema de Diagnóstico Médico Profesional</h1>
+        <p class="subtitle">Ingrese los parámetros médicos del paciente para obtener un diagnóstico</p>
         
         <form id="diagnosisForm">
             <div class="form-group">
-                <label for="valor1">Valor 1:</label>
-                <input type="number" id="valor1" name="valor1" step="0.1" required>
+                <label for="edad">Edad (años):</label>
+                <input type="number" id="edad" name="edad" step="0.1" min="0" max="150" required placeholder="Ej: 45">
             </div>
             
             <div class="form-group">
-                <label for="valor2">Valor 2:</label>
-                <input type="number" id="valor2" name="valor2" step="0.1" required>
+                <label for="indice_muscular">Índice Muscular (kg/m²):</label>
+                <input type="number" id="indice_muscular" name="indice_muscular" step="0.1" min="0" max="100" required placeholder="Ej: 25">
             </div>
             
             <div class="form-group">
-                <label for="valor3">Valor 3:</label>
-                <input type="number" id="valor3" name="valor3" step="0.1" required>
+                <label for="presion">Presión Arterial (mmHg):</label>
+                <input type="number" id="presion" name="presion" step="0.1" min="0" max="300" required placeholder="Ej: 120">
+            </div>
+            
+            <div class="form-group">
+                <label for="glucosa">Glucosa en Sangre (mg/dL):</label>
+                <input type="number" id="glucosa" name="glucosa" step="0.1" min="0" max="500" required placeholder="Ej: 90">
+            </div>
+            
+            <div class="form-group">
+                <label for="oxigenacion">Oxigenación (%):</label>
+                <input type="number" id="oxigenacion" name="oxigenacion" step="0.1" min="0" max="100" required placeholder="Ej: 98">
+            </div>
+            
+            <div class="form-group">
+                <label for="temperatura">Temperatura Corporal (°C):</label>
+                <input type="number" id="temperatura" name="temperatura" step="0.1" min="30" max="45" required placeholder="Ej: 36.5">
             </div>
             
             <div class="button-group">
                 <button type="submit" class="btn-primary">🔍 Obtener Diagnóstico</button>
                 <button type="button" class="btn-secondary" onclick="clearForm()">🗑️ Limpiar</button>
+                <a href="/estadisticas" class="btn-secondary" style="text-decoration: none; display: inline-block; text-align: center;">📊 Ver Estadísticas</a>
             </div>
         </form>
         
@@ -222,9 +238,10 @@
         <div class="api-info">
             <h3>📡 Información de la API</h3>
             <p><strong>Endpoint POST:</strong> <code>/api/predict</code></p>
-            <p><strong>Endpoint GET:</strong> <code>/api/predict?valor1=X&valor2=Y&valor3=Z</code></p>
+            <p><strong>Parámetros requeridos:</strong> edad, indice_muscular, presion, glucosa, oxigenacion, temperatura</p>
+            <p><strong>Endpoint GET:</strong> <code>/api/predict?edad=X&indice_muscular=Y&presion=Z&glucosa=A&oxigenacion=B&temperatura=C</code></p>
             <p><strong>Endpoint de salud:</strong> <code>/health</code></p>
-            <p><strong>Formato de respuesta:</strong> JSON con diagnóstico y valores calculados</p>
+            <p><strong>Clasificaciones:</strong> NO ENFERMO, ENFERMO LEVE, ENFERMO AGUDO, ENFERMO CRONICO, ENFERMEDAD TERMINAL</p>
         </div>
     </div>
 
@@ -232,9 +249,12 @@
         document.getElementById('diagnosisForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const valor1 = parseFloat(document.getElementById('valor1').value);
-            const valor2 = parseFloat(document.getElementById('valor2').value);
-            const valor3 = parseFloat(document.getElementById('valor3').value);
+            const edad = parseFloat(document.getElementById('edad').value);
+            const indice_muscular = parseFloat(document.getElementById('indice_muscular').value);
+            const presion = parseFloat(document.getElementById('presion').value);
+            const glucosa = parseFloat(document.getElementById('glucosa').value);
+            const oxigenacion = parseFloat(document.getElementById('oxigenacion').value);
+            const temperatura = parseFloat(document.getElementById('temperatura').value);
             
             // Mostrar loading
             document.getElementById('loading').style.display = 'block';
@@ -247,9 +267,12 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        valor1: valor1,
-                        valor2: valor2,
-                        valor3: valor3
+                        edad: edad,
+                        indice_muscular: indice_muscular,
+                        presion: presion,
+                        glucosa: glucosa,
+                        oxigenacion: oxigenacion,
+                        temperatura: temperatura
                     })
                 });
                 
@@ -277,10 +300,12 @@
                 resultDiv.innerHTML = `
                     <h3>📋 Resultado del Diagnóstico</h3>
                     <p><strong>Diagnóstico:</strong> ${data.diagnostico}</p>
-                    <p><strong>Valor 1:</strong> ${data.valor1}</p>
-                    <p><strong>Valor 2:</strong> ${data.valor2}</p>
-                    <p><strong>Valor 3:</strong> ${data.valor3}</p>
-                    <p><strong>Suma total:</strong> ${data.suma}</p>
+                    <p><strong>Edad:</strong> ${data.parametros.edad} años</p>
+                    <p><strong>Índice Muscular:</strong> ${data.parametros.indice_muscular} kg/m²</p>
+                    <p><strong>Presión Arterial:</strong> ${data.parametros.presion} mmHg</p>
+                    <p><strong>Glucosa:</strong> ${data.parametros.glucosa} mg/dL</p>
+                    <p><strong>Oxigenación:</strong> ${data.parametros.oxigenacion}%</p>
+                    <p><strong>Temperatura:</strong> ${data.parametros.temperatura}°C</p>
                     <p><strong>Mensaje:</strong> ${data.mensaje}</p>
                 `;
             } else {

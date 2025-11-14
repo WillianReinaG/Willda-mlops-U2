@@ -19,7 +19,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código de la aplicación
-COPY . .
+COPY app.py Diagnostico.py ./
+COPY templates/ ./templates/
+
+# Crear directorio para datos persistentes
+RUN mkdir -p /app/data
 
 # Crear usuario no-root para seguridad
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
@@ -32,6 +36,9 @@ EXPOSE 5000
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
+
+# Volumen para datos persistentes
+VOLUME ["/app/data"]
 
 # Comando para ejecutar la aplicación
 CMD ["python", "app.py"]
