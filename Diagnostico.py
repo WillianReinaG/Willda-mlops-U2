@@ -1,64 +1,77 @@
 # diagnostico.py
+# Sistema profesional de diagnóstico médico basado en múltiples parámetros
 
-def diagnostico(edad, temperatura, frecuencia_cardiaca, glucosa, presion_arterial):
+def diagnostico(edad, indice_muscular, presion, glucosa, oxigenacion, temperatura):
     """
-    Evalúa el estado de salud basado en 5 parámetros vitales.
+    Determina el nivel de enfermedad basado en parámetros médicos.
     
-    Args:
-        edad: 0-110 (óptimo: 30-40)
-        temperatura: 30-50°C (óptimo: 37)
-        frecuencia_cardiaca: 40-110 bpm (óptimo: 70)
-        glucosa: 50-400 mg/dL (óptimo: 100)
-        presion_arterial: 60-150 mmHg (óptimo: 105)
+    Parámetros:
+        edad (float): Edad del paciente en años
+        indice_muscular (float): Índice de masa muscular
+        presion (float): Presión arterial sistólica (mmHg)
+        glucosa (float): Nivel de glucosa en sangre (mg/dL)
+        oxigenacion (float): Nivel de saturación de oxígeno (%)
+        temperatura (float): Temperatura corporal (°C)
     
     Returns:
-        Categoría de enfermedad
+        str: Nivel de diagnóstico (NO ENFERMO, ENFERMO LEVE, ENFERMO AGUDO, 
+             ENFERMO CRONICO, ENFERMEDAD TERMINAL)
     """
     
-    # Definir rangos óptimos (puntos medios)
-    rangos_optimos = {
-        'edad': (30, 40, 0, 110),  # (min_óptimo, max_óptimo, min_rango, max_rango)
-        'temperatura': (36.5, 37.5, 30, 50),
-        'frecuencia_cardiaca': (60, 80, 40, 110),
-        'glucosa': (90, 110, 50, 400),
-        'presion_arterial': (100, 110, 60, 150)
-    }
+    # Normalizar valores para crear un índice de riesgo
+    # Factores de riesgo ajustados según importancia clínica
     
-    def calcular_desviacion(valor, parametro):
-        """Calcula puntuación de desviación (0 = óptimo, mayor = peor)"""
-        min_opt, max_opt, min_rango, max_rango = rangos_optimos[parametro]
-        
-        if min_opt <= valor <= max_opt:
-            return 0
-        elif valor < min_opt:
-            desviacion = min_opt - valor
-            rango_inf = min_opt - min_rango
-            return (desviacion / rango_inf) * 10 if rango_inf > 0 else 10
-        else:  # valor > max_opt
-            desviacion = valor - max_opt
-            rango_sup = max_rango - max_opt
-            return (desviacion / rango_sup) * 10 if rango_sup > 0 else 10
+    # Factor edad (mayor edad = mayor riesgo)
+    factor_edad = edad / 10  # Normalizado
     
-    # Calcular puntuaciones individuales
-    puntuaciones = {
-        'edad': calcular_desviacion(edad, 'edad'),
-        'temperatura': calcular_desviacion(temperatura, 'temperatura'),
-        'frecuencia_cardiaca': calcular_desviacion(frecuencia_cardiaca, 'frecuencia_cardiaca'),
-        'glucosa': calcular_desviacion(glucosa, 'glucosa'),
-        'presion_arterial': calcular_desviacion(presion_arterial, 'presion_arterial')
-    }
+    # Factor índice muscular (menor índice = mayor riesgo)
+    factor_muscular = max(0, (30 - indice_muscular) / 5)  # Invertido
     
-    # Suma ponderada (promedio de desviaciones)
-    suma = sum(puntuaciones.values()) / len(puntuaciones)
+    # Factor presión (valores normales 90-120, fuera de rango = riesgo)
+    if presion < 90:
+        factor_presion = (90 - presion) / 10  # Hipotensión
+    elif presion > 120:
+        factor_presion = (presion - 120) / 20  # Hipertensión
+    else:
+        factor_presion = 0  # Normal
     
-    # Clasificación según puntuación total
-    if suma < 10:
+    # Factor glucosa (valores normales 70-100, fuera de rango = riesgo)
+    if glucosa < 70:
+        factor_glucosa = (70 - glucosa) / 10  # Hipoglucemia
+    elif glucosa > 100:
+        factor_glucosa = (glucosa - 100) / 30  # Hiperglucemia
+    else:
+        factor_glucosa = 0  # Normal
+    
+    # Factor oxigenación (menor oxigenación = mayor riesgo crítico)
+    factor_oxigenacion = max(0, (98 - oxigenacion) / 2)  # Invertido
+    
+    # Factor temperatura (valores normales 36-37.5, fuera = riesgo)
+    if temperatura < 36:
+        factor_temperatura = (36 - temperatura) / 2  # Hipotermia
+    elif temperatura > 37.5:
+        factor_temperatura = (temperatura - 37.5) / 1.5  # Fiebre
+    else:
+        factor_temperatura = 0  # Normal
+    
+    # Calcular índice de riesgo total (ponderado)
+    indice_riesgo = (
+        factor_edad * 0.8 +
+        factor_muscular * 1.0 +
+        factor_presion * 1.5 +
+        factor_glucosa * 1.3 +
+        factor_oxigenacion * 2.0 +  # Oxigenación es crítica
+        factor_temperatura * 1.2
+    )
+    
+    # Clasificación según índice de riesgo
+    if indice_riesgo < 5:
         return "NO ENFERMO"
-    elif 10 <= suma < 20:
+    elif 5 <= indice_riesgo < 12:
         return "ENFERMO LEVE"
-    elif 20 <= suma < 30:
+    elif 12 <= indice_riesgo < 20:
         return "ENFERMO AGUDO"
-    elif 30 <= suma < 40:
+    elif 20 <= indice_riesgo < 30:
         return "ENFERMO CRONICO"
     else:
         return "ENFERMEDAD TERMINAL"

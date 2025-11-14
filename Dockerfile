@@ -19,7 +19,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código de la aplicación
-COPY app.py Diagnostico.py ./
+COPY app.py Diagnostico.py test_diagnostico.py ./
 COPY templates/ ./templates/
 
 # Crear directorio para datos persistentes

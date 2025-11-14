@@ -1,19 +1,9 @@
 # Requirements para el proyecto de diagnóstico médico
 # Este archivo contiene las dependencias necesarias para ejecutar el proyecto
 
-# Librerías básicas (comentadas ya que no se usan actualmente)
-# pandas>=1.5.0
-# numpy>=1.21.0
-# matplotlib>=3.5.0
-# scikit-learn>=1.1.0
-
-# Para desarrollo y testing (opcional)
-# pytest>=7.0.0
-# black>=22.0.0
-# flake8>=5.0.0
-
 # Flask para la aplicación web
 Flask>=2.3.0
 
-# Nota: El archivo Diagnostico.py actualmente no requiere librerías externas
-# Solo utiliza funciones básicas de Python estándar
+# Testing (opcional para desarrollo)
+pytest>=7.4.0
+pytest-cov>=4.1.0
