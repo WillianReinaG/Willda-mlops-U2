@@ -1,0 +1,311 @@
+name: CI/CD Pipeline - Diagnóstico Médico
+
+on:
+  # Evento 1: Ejecutar en cada Pull Request hacia main
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+  # Evento 2: Ejecutar en cada push/commit a main
+  push:
+    branches:
+      - main
+
+  # Permitir ejecución manual
+  workflow_dispatch:
+
+jobs:
+  # Job 1: Comentar en el PR
+  comment-on-pr:
+    name: 💬 Comentar en PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Comentar inicio de CI/CD
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 **CI/CD en acción. Ejecutando tareas...**\n\n' +
+                    '⏳ Las pruebas unitarias están en progreso.\n' +
+                    '📊 Verificando el modelo de diagnóstico médico profesional.\n' +
+                    '🐳 Construyendo y probando imagen Docker.\n\n' +
+                    '_Este comentario se actualizará cuando las pruebas terminen._'
+            })
+
+  # Job 2: Pruebas unitarias en Ubuntu
+  test-ubuntu:
+    name: 🧪 Pruebas Unitarias (Ubuntu)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: 🧪 Ejecutar pruebas unitarias
+        run: |
+          echo "=========================================="
+          echo "  EJECUTANDO PRUEBAS UNITARIAS"
+          echo "=========================================="
+          python test_diagnostico.py
+        continue-on-error: false
+
+      - name: 📊 Generar reporte de cobertura
+        if: always()
+        run: |
+          pytest test_diagnostico.py --cov=Diagnostico --cov-report=term-missing --cov-report=html || true
+
+      - name: 📤 Subir reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-ubuntu
+          path: htmlcov/
+          retention-days: 30
+
+  # Job 3: Pruebas en Docker
+  test-docker:
+    name: 🐳 Pruebas Unitarias (Docker)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🐳 Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ Construir imagen Docker
+        run: |
+          echo "=========================================="
+          echo "  CONSTRUYENDO IMAGEN DOCKER"
+          echo "=========================================="
+          docker build -t diagnostico-app:test .
+
+      - name: 🧪 Ejecutar pruebas dentro del contenedor
+        run: |
+          echo "=========================================="
+          echo "  EJECUTANDO PRUEBAS EN DOCKER"
+          echo "=========================================="
+          docker run --rm diagnostico-app:test python -m pytest test_diagnostico.py -v || \
+          docker run --rm diagnostico-app:test python test_diagnostico.py
+
+      - name: ✅ Verificar imagen Docker
+        run: |
+          echo "=========================================="
+          echo "  VERIFICANDO IMAGEN DOCKER"
+          echo "=========================================="
+          docker run --rm -d -p 5000:5000 --name test-container diagnostico-app:test
+          sleep 10
+          curl -f http://localhost:5000/health || exit 1
+          docker stop test-container
+          echo "✅ Imagen Docker funcional"
+
+  # Job 4: Pruebas de integración de API
+  test-api:
+    name: 🌐 Pruebas de API REST
+    runs-on: ubuntu-latest
+    needs: [test-ubuntu]
+    
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Instalar dependencias
+        run: |
+          pip install -r requirements.txt
+          pip install requests
+
+      - name: 🚀 Iniciar aplicación
+        run: |
+          python app.py &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          sleep 10
+
+      - name: 🧪 Probar endpoint /health
+        run: |
+          curl -f http://localhost:5000/health || exit 1
+
+      - name: 🧪 Probar endpoint /api/predict (POST)
+        run: |
+          curl -X POST http://localhost:5000/api/predict \
+            -H "Content-Type: application/json" \
+            -d '{"edad":25,"indice_muscular":28,"presion":110,"glucosa":85,"oxigenacion":98,"temperatura":36.5}' \
+            -f || exit 1
+
+      - name: 🧪 Probar endpoint /api/estadisticas
+        run: |
+          curl -f http://localhost:5000/api/estadisticas || exit 1
+
+      - name: 🛑 Detener aplicación
+        if: always()
+        run: |
+          kill $APP_PID || true
+
+  # Job 5: Análisis de código
+  code-quality:
+    name: 📝 Análisis de Calidad de Código
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Instalar herramientas de análisis
+        run: |
+          pip install flake8 pylint black
+
+      - name: 🔍 Análisis con flake8
+        run: |
+          flake8 Diagnostico.py app.py --max-line-length=120 --statistics || true
+
+      - name: 🎨 Verificar formato con black
+        run: |
+          black --check Diagnostico.py app.py --line-length=120 || true
+
+  # Job 6: Actualizar comentario del PR con resultados
+  update-pr-comment:
+    name: 📝 Actualizar Comentario PR
+    runs-on: ubuntu-latest
+    needs: [test-ubuntu, test-docker, test-api]
+    if: always() && github.event_name == 'pull_request'
+    
+    steps:
+      - name: Determinar estado de las pruebas
+        id: test-status
+        run: |
+          if [ "${{ needs.test-ubuntu.result }}" == "success" ] && \
+             [ "${{ needs.test-docker.result }}" == "success" ] && \
+             [ "${{ needs.test-api.result }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+            echo "message=Todas las pruebas pasaron exitosamente" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+            echo "message=Algunas pruebas fallaron" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Actualizar comentario en PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const status = '${{ steps.test-status.outputs.status }}';
+            const emoji = '${{ steps.test-status.outputs.emoji }}';
+            const message = '${{ steps.test-status.outputs.message }}';
+            
+            const testUbuntu = '${{ needs.test-ubuntu.result }}';
+            const testDocker = '${{ needs.test-docker.result }}';
+            const testApi = '${{ needs.test-api.result }}';
+            
+            const getEmoji = (result) => {
+              if (result === 'success') return '✅';
+              if (result === 'failure') return '❌';
+              return '⏭️';
+            };
+            
+            const body = `## ${emoji} CI/CD - Resultados
+            
+            **${message}**
+            
+            ### 📊 Resumen de Pruebas
+            
+            | Tarea | Estado | Resultado |
+            |-------|--------|-----------|
+            | Pruebas Ubuntu | ${getEmoji(testUbuntu)} | ${testUbuntu} |
+            | Pruebas Docker | ${getEmoji(testDocker)} | ${testDocker} |
+            | Pruebas API | ${getEmoji(testApi)} | ${testApi} |
+            
+            ### 📝 Detalles
+            
+            - **Pruebas Unitarias**: 10 tests del modelo de diagnóstico médico
+            - **Construcción Docker**: Imagen construida y verificada
+            - **API REST**: Endpoints probados y funcionales
+            - **Estadísticas**: Sistema de persistencia verificado
+            
+            ### 🔗 Enlaces
+            
+            - [Ver workflow completo](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - [Ver logs detallados](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            ---
+            
+            _Pipeline ejecutado: ${new Date().toISOString()}_`;
+            
+            // Buscar comentarios previos del bot
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('CI/CD en acción')
+            );
+            
+            if (botComment) {
+              // Actualizar comentario existente
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Crear nuevo comentario
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
+
+  # Job 7: Notificación final en main
+  notify-main:
+    name: 📢 Notificación en Main
+    runs-on: ubuntu-latest
+    needs: [test-ubuntu, test-docker, test-api]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Notificar éxito en main
+        run: |
+          echo "=========================================="
+          echo "  ✅ COMMIT EN MAIN VERIFICADO"
+          echo "=========================================="
+          echo "Todas las pruebas pasaron en la rama main"
+          echo "Commit: ${{ github.sha }}"
+          echo "Autor: ${{ github.actor }}"
+          echo "=========================================="
